@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -17,26 +15,22 @@ func main() {
 	}
 	defer file.Close()
 
-	var csvparser CSVParser = &MyCSVParser{
-		reader: bufio.NewReader(file),
-	}
+	var csvparser CSVParser = &MyCSVParser{}
+
 	for {
 		line, err := csvparser.ReadLine(file)
 		if err != nil {
 			if err == io.EOF {
-				if len(line) > 0 {
-					fmt.Println(line)
-				}
 				break
 			}
 			fmt.Println("Error reading line:", err)
 			return
 		}
 		fmt.Println(line)
-		fmt.Println(csvparser.GetField(1))
-		fmt.Println(csvparser.GetField(2))
-		fmt.Println(csvparser.GetField(3))
-		fmt.Println(csvparser.GetNumberOfFields())
+		// fmt.Println(csvparser.GetField(1))
+		// fmt.Println(csvparser.GetField(2))
+		// fmt.Println(csvparser.GetField(3))
+		// fmt.Println(csvparser.GetNumberOfFields())
 	}
 }
 
@@ -52,33 +46,45 @@ var (
 )
 
 type MyCSVParser struct {
-	reader *bufio.Reader
 	fields []string
 }
 
 func (p *MyCSVParser) ReadLine(r io.Reader) (string, error) {
-	line, err := p.reader.ReadString('\n')
-	if err != nil {
-		if err == io.EOF && len(line) > 0 {
-			line = strings.TrimSpace(line)
-			return line, io.EOF
+	var buf []byte
+	var single [1]byte
+
+	for {
+		n, err := r.Read(single[:])
+		if n > 0 {
+			b := single[0]
+			if b == '\n' {
+				break
+			}
+			buf = append(buf, b)
 		}
-		return "", err
+		if err != nil {
+			if err == io.EOF {
+				if len(buf) > 0 {
+					line := string(buf)
+					p.fields, _ = splitLine(line)
+					return line, io.EOF
+				}
+				return "", io.EOF
+			}
+			return "", err
+		}
 	}
-	line = strings.TrimSpace(line)
-	p.fields, err = splitLine(line)
-	if err != nil {
-		return "", err
-	}
+
+	line := string(buf)
+	p.fields, _ = splitLine(line)
 	return line, nil
 }
 
 func (p *MyCSVParser) GetField(n int) (string, error) {
-	if n < 0 || n > len(p.fields) {
+	if n < 1 || n > len(p.fields) {
 		return "", ErrFieldCount
 	}
-	field := p.fields[n-1]
-	return field, nil
+	return p.fields[n-1], nil
 }
 
 func (p *MyCSVParser) GetNumberOfFields() int {
