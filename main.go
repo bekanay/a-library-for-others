@@ -26,11 +26,12 @@ func main() {
 			fmt.Println("Error reading line:", err)
 			return
 		}
+		
 		fmt.Println(line)
-		// fmt.Println(csvparser.GetField(1))
-		// fmt.Println(csvparser.GetField(2))
-		// fmt.Println(csvparser.GetField(3))
-		// fmt.Println(csvparser.GetNumberOfFields())
+		for i := 0; i < csvparser.GetNumberOfFields(); i++ {
+			fmt.Println(csvparser.GetField(i))
+		}
+		fmt.Println()
 	}
 }
 
@@ -65,46 +66,56 @@ func (p *MyCSVParser) ReadLine(r io.Reader) (string, error) {
 		if err != nil {
 			if err == io.EOF {
 				if len(buf) > 0 {
-					line := string(buf)
-					p.fields, _ = splitLine(line)
-					return line, io.EOF
+					return "", io.EOF
 				}
-				return "", io.EOF
 			}
 			return "", err
-		}
+		} 
 	}
 
 	line := string(buf)
-	p.fields, _ = splitLine(line)
+	fields, err := splitLine(line)
+	if err != nil {
+		return "", err
+	}
+	p.fields = fields
 	return line, nil
 }
 
 func (p *MyCSVParser) GetField(n int) (string, error) {
-	if n < 1 || n > len(p.fields) {
+	if n < 0 || n >= len(p.fields) {
 		return "", ErrFieldCount
 	}
-	return p.fields[n-1], nil
+	return p.fields[n], nil
 }
 
 func (p *MyCSVParser) GetNumberOfFields() int {
 	return len(p.fields)
 }
 
+func trimQuotes(word string) string {
+	return word[1:len(word)-1]
+}
 func splitLine(line string) ([]string, error) {
 	fields := []string{}
+	numberOfQuotes := 0
 	isQuote := false
 	word := ""
 	for i := 0; i < len(line); i++ {
 		if line[i] == '"' {
+			numberOfQuotes++
+			word += string(line[i])
+			isQuote = !isQuote
+		} else if line[i] == ',' {
 			if !isQuote {
-				isQuote = true
-			} else {
+				if numberOfQuotes > 0 {
+					word = trimQuotes(word)
+				}
 				fields = append(fields, word)
+				word = ""
+			} else {
+				word += string(line[i])
 			}
-		} else if line[i] == ',' && !isQuote {
-			fields = append(fields, word)
-			word = ""
 		} else {
 			word += string(line[i])
 		}
