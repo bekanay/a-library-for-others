@@ -36,7 +36,12 @@ func (p *MyCSVParser) ReadLine(r io.Reader) (string, error) {
 		if err != nil {
 			if err == io.EOF {
 				if len(buf) > 0 {
-					return "", io.EOF
+					fields, err := splitLine(string(buf))
+					p.fields = fields
+					if err != nil {
+						return "", err
+					}
+					return string(buf), io.EOF
 				}
 			}
 			return "", err

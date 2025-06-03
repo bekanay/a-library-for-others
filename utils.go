@@ -16,8 +16,9 @@ func splitLine(line string) ([]string, error) {
 			isQuote = !isQuote
 		} else if line[i] == ',' {
 			if !isQuote {
-				if numberOfQuotes > 0 {
+				if numberOfQuotes > 0 && word[0] == '"' && word[len(word)-1] == '"'{
 					word = trimQuotes(word)
+					numberOfQuotes = 0
 				}
 				fields = append(fields, word)
 				word = ""
@@ -30,6 +31,10 @@ func splitLine(line string) ([]string, error) {
 	}
 	if isQuote {
 		return nil, ErrQuote
+	}
+	if numberOfQuotes > 0 && word[0] == '"' && word[len(word)-1] == '"'{
+		word = trimQuotes(word)
+		numberOfQuotes = 0
 	}
 	fields = append(fields, word)
 	return fields, nil

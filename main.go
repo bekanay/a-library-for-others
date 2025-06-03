@@ -19,17 +19,19 @@ func main() {
 	for {
 		line, err := csvparser.ReadLine(file)
 		if err != nil {
-			if err == io.EOF {
-				break
+			if err != io.EOF {
+				fmt.Println("Error reading line:", err)
+				return
 			}
-			fmt.Println("Error reading line:", err)
-			return
 		}
-
+		
 		fmt.Println(line)
 		for i := 0; i < csvparser.GetNumberOfFields(); i++ {
 			fmt.Println(csvparser.GetField(i))
 		}
 		fmt.Println()
+		if err == io.EOF {
+			break
+		}
 	}
 }
